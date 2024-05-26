@@ -60,7 +60,7 @@ public class ItemStorageImpl implements ItemStorage {
 
     @Override
     public ItemDto getItemById(int id) {
-        if(items.get(id)==null){
+        if (items.get(id) == null) {
             throw new NotFoundException("Предмет не найден.");
         }
         return ItemMapper.toItemDto(items.get(id));
