@@ -83,14 +83,14 @@ public class UserStorageImpl implements UserStorage {
     private void checkEmailBusy(UserDto userDto) {
         for (User user : users.values()) {
             if (user.getEmail().equals(userDto.getEmail())) {
-                throw new EmailAlreadyBusyException("The email is already busy.");
+                throw new EmailAlreadyBusyException("Этот Email уже используется.");
             }
         }
     }
 
     private void checkEmailIsCorrect(UserDto userDto) {
         if (userDto.getEmail().contains(" ") || !userDto.getEmail().contains("@")) {
-            throw new ValidationException("Incorrect email.");
+            throw new ValidationException("Некорректный Email.");
         }
     }
 }

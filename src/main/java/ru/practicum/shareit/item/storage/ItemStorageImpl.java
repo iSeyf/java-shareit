@@ -20,15 +20,15 @@ public class ItemStorageImpl implements ItemStorage {
     @Override
     public ItemDto addItem(ItemDto itemDto, int ownerId) {
         if (itemDto.getName() == null || itemDto.getName().trim().isEmpty()) {
-            throw new ValidationException("Item name cannot be empty.");
+            throw new ValidationException("Название не может быть пустым.");
         }
 
         if (itemDto.getDescription() == null || itemDto.getDescription().trim().isEmpty()) {
-            throw new ValidationException("Description cannot be empty.");
+            throw new ValidationException("Описание не может быть пустым.");
         }
 
         if (itemDto.getAvailable() == null) {
-            throw new ValidationException("Availability must be specified.");
+            throw new ValidationException("Необходимо указать наличие предмета.");
         }
         itemDto.setId(createItemId());
         items.put(itemDto.getId(), ItemMapper.toItem(itemDto, ownerId));
@@ -60,6 +60,9 @@ public class ItemStorageImpl implements ItemStorage {
 
     @Override
     public ItemDto getItemById(int id) {
+        if(items.get(id)==null){
+            throw new NotFoundException("Предмет не найден.");
+        }
         return ItemMapper.toItemDto(items.get(id));
     }
 
