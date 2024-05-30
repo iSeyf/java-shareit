@@ -2,7 +2,6 @@ package ru.practicum.shareit.item.storage;
 
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
@@ -16,45 +15,32 @@ import java.util.Map;
 public class ItemStorageImpl implements ItemStorage {
     private int itemId = 0;
     private Map<Integer, Item> items = new HashMap<>();
+    private Map<Integer, List<Item>> ownerItems = new HashMap<>();
 
     @Override
     public ItemDto addItem(ItemDto itemDto, int ownerId) {
-        if (itemDto.getName() == null || itemDto.getName().trim().isEmpty()) {
-            throw new ValidationException("Название не может быть пустым.");
-        }
+        Item item = ItemMapper.toItem(itemDto, ownerId);
+        item.setId(createItemId());
+        items.put(item.getId(), item);
 
-        if (itemDto.getDescription() == null || itemDto.getDescription().trim().isEmpty()) {
-            throw new ValidationException("Описание не может быть пустым.");
-        }
+        ownerItems.computeIfAbsent(ownerId, k -> new ArrayList<>());
+        ownerItems.get(ownerId).add(item);
 
-        if (itemDto.getAvailable() == null) {
-            throw new ValidationException("Необходимо указать наличие предмета.");
-        }
-        itemDto.setId(createItemId());
-        items.put(itemDto.getId(), ItemMapper.toItem(itemDto, ownerId));
-        return itemDto;
+        return ItemMapper.toItemDto(item);
     }
 
     @Override
     public ItemDto updateItem(int id, ItemDto itemDto, int ownerId) {
         Item item = items.get(id);
-        if (item == null) {
-            throw new NotFoundException("Предмет не найден!");
-        }
         if (item.getOwner() != ownerId) {
-            throw new NotFoundException("Предмет не найден!");
+            throw new NotFoundException("Предмет не найден.");
         }
-        if (itemDto.getName() != null) {
-            item.setName(itemDto.getName());
-        }
-        if (itemDto.getDescription() != null) {
-            item.setDescription(itemDto.getDescription());
-        }
-        if (itemDto.getAvailable() != null) {
-            item.setAvailable(itemDto.getAvailable());
-        }
-        items.remove(id);
-        items.put(id, item);
+        ownerItems.get(ownerId).remove(item);
+
+        Item updatedItem = ItemMapper.toItem(itemDto, ownerId);
+        items.put(id, updatedItem);
+        ownerItems.get(ownerId).add(updatedItem);
+
         return ItemMapper.toItemDto(items.get(id));
     }
 
@@ -68,12 +54,9 @@ public class ItemStorageImpl implements ItemStorage {
 
     @Override
     public List<ItemDto> getItems(int ownerId) {
-        List<Item> itemList = new ArrayList<>(items.values());
         List<ItemDto> userItems = new ArrayList<>();
-        for (Item item : itemList) {
-            if (item.getOwner() == ownerId) {
-                userItems.add(ItemMapper.toItemDto(item));
-            }
+        for (Item item : ownerItems.get(ownerId)) {
+            userItems.add(ItemMapper.toItemDto(item));
         }
         return userItems;
     }
@@ -84,8 +67,8 @@ public class ItemStorageImpl implements ItemStorage {
         if (!text.isEmpty()) {
             String searchedItem = text.trim().toLowerCase();
             for (Item item : items.values()) {
-                String itemName = item.getName().trim().toLowerCase();
-                String itemDescription = item.getDescription().trim().toLowerCase();
+                String itemName = item.getName().toLowerCase();
+                String itemDescription = item.getDescription().toLowerCase();
                 if (item.isAvailable()) {
                     if (itemName.contains(searchedItem) || itemDescription.contains(searchedItem)) {
                         itemList.add(ItemMapper.toItemDto(item));

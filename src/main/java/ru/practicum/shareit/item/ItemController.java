@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.service.ItemService;
 
+import javax.validation.Valid;
 import java.util.List;
 
 /**
@@ -29,7 +30,7 @@ public class ItemController {
     }
 
     @PostMapping
-    public ItemDto addItem(@RequestBody ItemDto itemDto, @RequestHeader("X-Sharer-User-Id") int ownerId) {
+    public ItemDto addItem(@Valid @RequestBody ItemDto itemDto, @RequestHeader("X-Sharer-User-Id") int ownerId) {
         return service.addItem(itemDto, ownerId);
     }
 

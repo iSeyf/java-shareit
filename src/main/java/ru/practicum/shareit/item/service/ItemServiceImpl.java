@@ -2,6 +2,7 @@ package ru.practicum.shareit.item.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.storage.ItemStorage;
 import ru.practicum.shareit.user.storage.UserStorage;
@@ -27,7 +28,20 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto updateItem(int id, ItemDto itemDto, int ownerId) {
-        return itemStorage.updateItem(id, itemDto, ownerId);
+        ItemDto updatedItem = getItemById(id);
+        if (updatedItem == null) {
+            throw new NotFoundException("Предмет не найден!");
+        }
+        if (itemDto.getName() != null) {
+            updatedItem.setName(itemDto.getName());
+        }
+        if (itemDto.getDescription() != null) {
+            updatedItem.setDescription(itemDto.getDescription());
+        }
+        if (itemDto.getAvailable() != null) {
+            updatedItem.setAvailable(itemDto.getAvailable());
+        }
+        return itemStorage.updateItem(id, updatedItem, ownerId);
     }
 
     @Override
