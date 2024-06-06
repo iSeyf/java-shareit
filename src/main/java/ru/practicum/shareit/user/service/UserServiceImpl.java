@@ -2,16 +2,20 @@ package ru.practicum.shareit.user.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.exceptions.EmailAlreadyBusyException;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.storage.UserStorage;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class UserServiceImpl implements UserService {
     private UserStorage storage;
+    private Set<String> emails = new HashSet<>();
 
     @Autowired
     public UserServiceImpl(UserStorage storage) {
@@ -20,8 +24,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto createUser(UserDto userDto) {
-        storage.checkEmailBusy(userDto.getEmail());
-        return storage.createUser(userDto);
+        checkEmailBusy(userDto.getEmail());
+        UserDto createdUser = storage.createUser(userDto);
+        emails.add(userDto.getEmail());
+        return createdUser;
     }
 
     @Override
@@ -36,8 +42,10 @@ public class UserServiceImpl implements UserService {
         if (userDto.getEmail() != null) {
             checkEmailIsCorrect(userDto);
             if (!userDto.getEmail().equals(updatedUser.getEmail())) {
-                storage.checkEmailBusy(userDto.getEmail());
+                checkEmailBusy(userDto.getEmail());
+                emails.remove(updatedUser.getEmail());
                 updatedUser.setEmail(userDto.getEmail());
+                emails.add(updatedUser.getEmail());
             }
         }
         return storage.updateUser(id, updatedUser);
@@ -55,12 +63,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(int id) {
+        UserDto userDto = getUserById(id);
         storage.deleteUser(id);
+        emails.remove(userDto.getEmail());
     }
 
     private void checkEmailIsCorrect(UserDto userDto) {
         if (userDto.getEmail().contains(" ") || !userDto.getEmail().contains("@")) {
             throw new ValidationException("Некорректный Email.");
+        }
+    }
+
+    private void checkEmailBusy(String email) {
+        if (emails.contains(email)) {
+            throw new EmailAlreadyBusyException("Этот Email уже используется.");
         }
     }
 

@@ -16,6 +16,4 @@ public interface UserStorage {
 
     void deleteUser(int id);
 
-    void checkEmailBusy(String email);
-
 }
