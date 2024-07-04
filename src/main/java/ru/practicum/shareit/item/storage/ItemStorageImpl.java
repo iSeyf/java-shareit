@@ -1,4 +1,4 @@
-package ru.practicum.shareit.item.storage;
+/*package ru.practicum.shareit.item.storage;
 
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.exceptions.NotFoundException;
@@ -83,3 +83,4 @@ public class ItemStorageImpl implements ItemStorage {
         return ++itemId;
     }
 }
+*/

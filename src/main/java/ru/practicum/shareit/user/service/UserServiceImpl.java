@@ -2,70 +2,61 @@ package ru.practicum.shareit.user.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.exceptions.EmailAlreadyBusyException;
-import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.storage.UserStorage;
+import ru.practicum.shareit.user.mapper.UserMapper;
+import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.repository.UserRepository;
+import ru.practicum.shareit.validation.ValidationUtil;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class UserServiceImpl implements UserService {
-    private UserStorage storage;
-    private Set<String> emails = new HashSet<>();
+    private final UserRepository repository;
 
     @Autowired
-    public UserServiceImpl(UserStorage storage) {
-        this.storage = storage;
+    public UserServiceImpl(UserRepository repository) {
+        this.repository = repository;
     }
 
     @Override
     public UserDto createUser(UserDto userDto) {
-        checkEmailBusy(userDto.getEmail());
-        UserDto createdUser = storage.createUser(userDto);
-        emails.add(userDto.getEmail());
-        return createdUser;
+        User user = repository.save(UserMapper.toUser(userDto));
+        return UserMapper.toUserDto(user);
     }
 
     @Override
-    public UserDto updateUser(int id, UserDto userDto) {
-        UserDto updatedUser = getUserById(id);
-        if (updatedUser == null) {
-            throw new NotFoundException("Пользователь не найден.");
-        }
+    public UserDto updateUser(long id, UserDto userDto) {
+        User user = ValidationUtil.checkUser(id, repository);
+
         if (userDto.getName() != null) {
-            updatedUser.setName(userDto.getName());
+            user.setName(userDto.getName());
         }
         if (userDto.getEmail() != null) {
             checkEmailIsCorrect(userDto);
-            if (!userDto.getEmail().equals(updatedUser.getEmail())) {
-                checkEmailBusy(userDto.getEmail());
-                emails.remove(updatedUser.getEmail());
-                updatedUser.setEmail(userDto.getEmail());
-                emails.add(updatedUser.getEmail());
+            if (!userDto.getEmail().equals(user.getEmail())) {
+                user.setEmail(userDto.getEmail());
             }
         }
-        return storage.updateUser(id, updatedUser);
+        return UserMapper.toUserDto(repository.save(user));
     }
 
     @Override
     public List<UserDto> getUsers() {
-        return storage.getUsers();
+        return UserMapper.toUserDtoList(repository.findAll());
     }
 
     @Override
-    public UserDto getUserById(int id) {
-        return storage.getUserById(id);
+    public UserDto getUserById(long id) {
+        User user = ValidationUtil.checkUser(id, repository);
+        return UserMapper.toUserDto(user);
     }
 
     @Override
-    public void deleteUser(int id) {
-        UserDto userDto = getUserById(id);
-        storage.deleteUser(id);
-        emails.remove(userDto.getEmail());
+    public void deleteUser(long id) {
+        ValidationUtil.checkUser(id, repository);
+        repository.deleteById(id);
     }
 
     private void checkEmailIsCorrect(UserDto userDto) {
@@ -73,11 +64,4 @@ public class UserServiceImpl implements UserService {
             throw new ValidationException("Некорректный Email.");
         }
     }
-
-    private void checkEmailBusy(String email) {
-        if (emails.contains(email)) {
-            throw new EmailAlreadyBusyException("Этот Email уже используется.");
-        }
-    }
-
 }

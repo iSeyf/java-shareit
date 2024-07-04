@@ -1,4 +1,4 @@
-package ru.practicum.shareit.user.storage;
+/*package ru.practicum.shareit.user.storage;
 
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.exceptions.NotFoundException;
@@ -59,4 +59,4 @@ public class UserStorageImpl implements UserStorage {
     private int createUserId() {
         return ++userId;
     }
-}
+}*/

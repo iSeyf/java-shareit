@@ -5,8 +5,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.shareit.error.model.ErrorResponse;
+import ru.practicum.shareit.exceptions.BookingConfirmationException;
+import ru.practicum.shareit.exceptions.BookingModificationException;
+import ru.practicum.shareit.exceptions.ItemUnavailableException;
+import ru.practicum.shareit.exceptions.UnauthorizedCommentException;
 import ru.practicum.shareit.exceptions.EmailAlreadyBusyException;
 import ru.practicum.shareit.exceptions.NotFoundException;
+import ru.practicum.shareit.exceptions.UnsupportedStateException;
 import ru.practicum.shareit.exceptions.ValidationException;
 
 @RestControllerAdvice
@@ -30,4 +35,33 @@ public class ErrorHandler {
         return new ErrorResponse("409", exception.getMessage());
     }
 
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handlerUnsupportedStateException(final UnsupportedStateException exception) {
+        return new ErrorResponse(exception.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handlerCannotCommentException(final UnauthorizedCommentException exception) {
+        return new ErrorResponse("400", exception.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handlerCannotBookException(final ItemUnavailableException exception) {
+        return new ErrorResponse("400", exception.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handlerBookingModificationException(final BookingModificationException exception) {
+        return new ErrorResponse("400", exception.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handlerBookingConfirmationException(final BookingConfirmationException exception) {
+        return new ErrorResponse("404", exception.getMessage());
+    }
 }
