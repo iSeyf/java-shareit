@@ -1,7 +1,8 @@
 package ru.practicum.shareit.item.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingInfoDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
@@ -19,37 +20,33 @@ import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
-import ru.practicum.shareit.validation.ValidationUtil;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeSet;
 
 @Service
+@RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final BookingRepository bookingRepository;
 
-    @Autowired
-    public ItemServiceImpl(ItemRepository itemRepository, UserRepository userRepository, CommentRepository commentRepository, BookingRepository bookingRepository) {
-        this.itemRepository = itemRepository;
-        this.userRepository = userRepository;
-        this.commentRepository = commentRepository;
-        this.bookingRepository = bookingRepository;
-    }
-
     @Override
+    @Transactional
     public ItemDto addItem(ItemDto itemDto, long ownerId) {
-        User user = ValidationUtil.checkUser(ownerId, userRepository);
+        User user = userRepository.findById(ownerId).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
         Item item = ItemMapper.toItem(itemDto, user);
         return ItemMapper.toItemDto(itemRepository.save(item));
     }
 
     @Override
+    @Transactional
     public ItemDto updateItem(long id, ItemDto itemDto, long ownerId) {
-        Item item = ValidationUtil.checkItem(id, itemRepository);
+        Item item = itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Предмет с таким ID не найден."));
 
         if (item.getOwner().getId() != ownerId) {
             throw new NotFoundException("Предмет не найден.");
@@ -67,9 +64,10 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ItemDto getItemById(long id, long ownerId) {
-        Item item = ValidationUtil.checkItem(id, itemRepository);
-        ValidationUtil.checkUser(ownerId, userRepository);
+        Item item = itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Предмет с таким ID не найден."));
+        userRepository.findById(ownerId).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
 
         ItemDto itemDto = ItemMapper.toItemDto(item);
         List<Comment> comments = commentRepository.findAllByItemId(id);
@@ -83,6 +81,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ItemDto> getItems(long ownerId) {
         List<Item> itemList = itemRepository.findAllItemByOwnerId(ownerId);
         List<ItemDto> itemDtoList = ItemMapper.toItemDtoList(itemList);
@@ -95,6 +94,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ItemDto> searchItem(String text) {
         List<ItemDto> itemDtoList = new ArrayList<>();
         if (!text.isBlank()) {
@@ -110,9 +110,10 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public CommentDto addComment(long itemId, InputCommentDto commentDto, long userId) {
-        Item item = ValidationUtil.checkItem(itemId, itemRepository);
-        User user = ValidationUtil.checkUser(userId, userRepository);
+        Item item = itemRepository.findById(itemId).orElseThrow(() -> new NotFoundException("Предмет с таким ID не найден."));
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
 
         List<Booking> bookingList = bookingRepository.findByItemIdAndBookerIdAndEndBeforeAndStatus(itemId, userId, LocalDateTime.now(), BookingStatus.APPROVED);
         if (bookingList.isEmpty()) {
@@ -123,18 +124,21 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private ItemDto setLastAndNextBooking(ItemDto itemDto) {
-        List<Booking> nextBooking = bookingRepository.findFirstByItemIdAndStartAfterAndStatusOrderByStartAsc(itemDto.getId(),
-                LocalDateTime.now(), BookingStatus.APPROVED);
-        List<Booking> lastBooking = bookingRepository.findFirstByItemIdAndStartBeforeAndStatusOrderByEndDesc(itemDto.getId(),
-                LocalDateTime.now(), BookingStatus.APPROVED);
-        if (!lastBooking.isEmpty()) {
-            Booking booking = lastBooking.get(0);
-            itemDto.setLastBooking(new BookingInfoDto(booking.getId(), booking.getBooker().getId()));
-        }
-        if (!nextBooking.isEmpty()) {
-            Booking booking = nextBooking.get(0);
-            itemDto.setNextBooking(new BookingInfoDto(booking.getId(), booking.getBooker().getId()));
-        }
+        List<Booking> bookings = bookingRepository.findAllByItemIdAndStatus(itemDto.getId(), BookingStatus.APPROVED);
+
+        TreeSet<Booking> bookingsByStartTime = new TreeSet<>(Comparator.comparing(Booking::getStart));
+        bookingsByStartTime.addAll(bookings);
+
+        LocalDateTime now = LocalDateTime.now();
+        Booking referenceBooking = new Booking();
+        referenceBooking.setStart(now);
+
+        Booking nextBooking = bookingsByStartTime.ceiling(referenceBooking);
+        Booking lastBooking = bookingsByStartTime.floor(referenceBooking);
+
+        itemDto.setNextBooking(nextBooking != null ? new BookingInfoDto(nextBooking.getId(), nextBooking.getBooker().getId()) : null);
+        itemDto.setLastBooking(lastBooking != null ? new BookingInfoDto(lastBooking.getId(), lastBooking.getBooker().getId()) : null);
+
         return itemDto;
     }
 }

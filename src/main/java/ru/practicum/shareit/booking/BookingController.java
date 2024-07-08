@@ -1,5 +1,6 @@
 package ru.practicum.shareit.booking;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,12 +22,9 @@ import java.util.List;
  */
 @RestController
 @RequestMapping(path = "/bookings")
+@RequiredArgsConstructor
 public class BookingController {
-    private BookingService service;
-
-    public BookingController(BookingService service) {
-        this.service = service;
-    }
+    private final BookingService service;
 
     @PostMapping
     public BookingDto addBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
