@@ -108,7 +108,13 @@ public class BookingServiceImpl implements BookingService {
     @Transactional(readOnly = true)
     public List<BookingDto> getAllBookingsByUserId(long userId, String state) {
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
-        BookingState bookingState = BookingState.fromString(state);
+        BookingState bookingState;
+
+        try {
+            bookingState = BookingState.valueOf(state);
+        } catch (IllegalArgumentException e) {
+            throw new UnsupportedStateException("Unknown state: " + state);
+        }
 
         List<Booking> bookings = new ArrayList<>();
         switch (bookingState) {
@@ -133,7 +139,12 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingDto> getAllBookingsByOwnerId(long ownerId, String state) {
         userRepository.findById(ownerId).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
 
-        BookingState bookingState = BookingState.fromString(state);
+        BookingState bookingState;
+        try {
+            bookingState = BookingState.valueOf(state);
+        } catch (IllegalArgumentException e) {
+            throw new UnsupportedStateException("Unknown state: " + state);
+        }
 
         List<Booking> bookings = new ArrayList<>();
         switch (bookingState) {
