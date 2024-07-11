@@ -13,34 +13,33 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-
-/**
- * TODO Sprint add-controllers.
- */
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "items", schema = "public")
 @Data
+@Table(name = "comments")
 @AllArgsConstructor
 @NoArgsConstructor
-public class Item {
+public class Comment {
     @Id
-    @Column(name = "item_id")
+    @Column(name = "comment_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @Column(name = "name", nullable = false)
-    private String name;
-    @Column(name = "description", nullable = false)
-    private String description;
-    @Column
-    private boolean available;
+    @Column(name = "text")
+    private String text;
     @ManyToOne
-    @JoinColumn(name = "owner_id")
-    private User owner;
+    @JoinColumn(name = "item_id")
+    private Item item;
+    @ManyToOne
+    @JoinColumn(name = "author_id")
+    private User author;
+    @Column(name = "created_time")
+    private LocalDateTime created;
 
-    public Item(String name, String description, boolean available) {
-        this.name = name;
-        this.description = description;
-        this.available = available;
+    public Comment(String text, Item item, User author, LocalDateTime created) {
+        this.text = text;
+        this.item = item;
+        this.author = author;
+        this.created = created;
     }
 }

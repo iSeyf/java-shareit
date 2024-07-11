@@ -1,61 +1,64 @@
 package ru.practicum.shareit.user.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.storage.UserStorage;
+import ru.practicum.shareit.user.mapper.UserMapper;
+import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    private UserStorage storage;
-
-    @Autowired
-    public UserServiceImpl(UserStorage storage) {
-        this.storage = storage;
-    }
+    private final UserRepository repository;
 
     @Override
+    @Transactional
     public UserDto createUser(UserDto userDto) {
-        storage.checkEmailBusy(userDto.getEmail());
-        return storage.createUser(userDto);
+        User user = repository.save(UserMapper.toUser(userDto));
+        return UserMapper.toUserDto(user);
     }
 
     @Override
-    public UserDto updateUser(int id, UserDto userDto) {
-        UserDto updatedUser = getUserById(id);
-        if (updatedUser == null) {
-            throw new NotFoundException("Пользователь не найден.");
-        }
+    @Transactional
+    public UserDto updateUser(long id, UserDto userDto) {
+        User user = repository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
+
         if (userDto.getName() != null) {
-            updatedUser.setName(userDto.getName());
+            user.setName(userDto.getName());
         }
         if (userDto.getEmail() != null) {
             checkEmailIsCorrect(userDto);
-            if (!userDto.getEmail().equals(updatedUser.getEmail())) {
-                storage.checkEmailBusy(userDto.getEmail());
-                updatedUser.setEmail(userDto.getEmail());
+            if (!userDto.getEmail().equals(user.getEmail())) {
+                user.setEmail(userDto.getEmail());
             }
         }
-        return storage.updateUser(id, updatedUser);
+        return UserMapper.toUserDto(repository.save(user));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserDto> getUsers() {
-        return storage.getUsers();
+        return UserMapper.toUserDtoList(repository.findAll());
     }
 
     @Override
-    public UserDto getUserById(int id) {
-        return storage.getUserById(id);
+    @Transactional(readOnly = true)
+    public UserDto getUserById(long id) {
+        User user = repository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
+        return UserMapper.toUserDto(user);
     }
 
     @Override
-    public void deleteUser(int id) {
-        storage.deleteUser(id);
+    @Transactional
+    public void deleteUser(long id) {
+        repository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
+        repository.deleteById(id);
     }
 
     private void checkEmailIsCorrect(UserDto userDto) {
@@ -63,5 +66,4 @@ public class UserServiceImpl implements UserService {
             throw new ValidationException("Некорректный Email.");
         }
     }
-
 }
