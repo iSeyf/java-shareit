@@ -66,7 +66,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingDto respondBooking(long userId, long bookingId, boolean approved) {
-        userRepository.findById(userId).orElseThrow(()-> new WrongUserException("Пользователь с таким ID не найден."));
+        userRepository.findById(userId).orElseThrow(() -> new WrongUserException("Пользователь с таким ID не найден."));
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(
                 () -> new NotFoundException("Бронирование с указанным ID не найдено."));
 
