@@ -38,7 +38,6 @@ public class UserServiceIntegrationTest {
         user2.setName("Second Name");
         user2.setEmail("secondUser@mail.ru");
 
-        wrongUser = new UserDto();
         user.setName("");
     }
 
