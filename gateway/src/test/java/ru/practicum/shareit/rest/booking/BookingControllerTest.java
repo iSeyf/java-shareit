@@ -46,7 +46,7 @@ public class BookingControllerTest {
     private BookingController bookingController;
 
     @Test
-    public void AddBookingTest() throws Exception {
+    public void addBookingTest() throws Exception {
         BookingDto bookingDto = new BookingDto(1, LocalDateTime.now().plusMinutes(20), LocalDateTime.now().plusMinutes(100), new ItemDto(), new UserDto(), BookingStatus.WAITING);
         when(client.addBooking(anyLong(), any(BookingRequestDto.class))).thenReturn(ResponseEntity.ok(bookingDto));
 
