@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.BookingController;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
+import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -101,7 +102,7 @@ public class BookingControllerTest {
         BookingDto bookingDto = new BookingDto(1, start, end, item, user, BookingStatus.WAITING);
         List<BookingDto> bookings = new ArrayList<>();
         bookings.add(bookingDto);
-        when(service.getAllBookingsByUserId(anyLong(), anyString()))
+        when(service.getAllBookingsByUserId(anyLong(), any(BookingState.class)))
                 .thenReturn(bookings);
         mvc.perform(get("/bookings")
                         .content(mapper.writeValueAsString(bookings))
@@ -133,7 +134,7 @@ public class BookingControllerTest {
         BookingDto bookingDto = new BookingDto(1, start, end, item, user, BookingStatus.WAITING);
         List<BookingDto> bookings = new ArrayList<>();
         bookings.add(bookingDto);
-        when(service.getAllBookingsByOwnerId(anyLong(), anyString()))
+        when(service.getAllBookingsByOwnerId(anyLong(), any(BookingState.class)))
                 .thenReturn(bookings);
         mvc.perform(get("/bookings/owner")
                         .content(mapper.writeValueAsString(bookings))

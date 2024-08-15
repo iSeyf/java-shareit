@@ -11,10 +11,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
+import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.exceptions.UnsupportedStateException;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
@@ -113,17 +113,15 @@ public class BookingServiceIntegrationTest {
     public void getAllBookingsByUserIdTest() {
         BookingDto savedBooking = bookingService.addBooking(user2.getId(), newBooking);
 
-        assertEquals(savedBooking, bookingService.getAllBookingsByUserId(user2.getId(), "ALL").get(0), "Должно возвращаться сохранённое бронирование для указанного пользователя");
-        assertThrows(NotFoundException.class, () -> bookingService.getAllBookingsByUserId(user2.getId() + 1, "ALL"), "Должно выбрасываться NotFoundException, если пользователь с таким ID не найден");
-        assertThrows(UnsupportedStateException.class, () -> bookingService.getAllBookingsByUserId(user1.getId(), "UNKNOWN"), "Должно выбрасываться UnsupportedStateException, если передано неизвестное состояние бронирования");
+        assertEquals(savedBooking, bookingService.getAllBookingsByUserId(user2.getId(), BookingState.ALL).get(0), "Должно возвращаться сохранённое бронирование для указанного пользователя");
+        assertThrows(NotFoundException.class, () -> bookingService.getAllBookingsByUserId(user2.getId() + 1, BookingState.ALL), "Должно выбрасываться NotFoundException, если пользователь с таким ID не найден");
     }
 
     @Test
     public void getAllBookingsByOwnerIdTest() {
         BookingDto savedBooking = bookingService.addBooking(user2.getId(), newBooking);
 
-        assertEquals(savedBooking, bookingService.getAllBookingsByOwnerId(user1.getId(), "ALL").get(0), "Должно возвращаться сохранённое бронирование для указанного пользователя");
-        assertThrows(NotFoundException.class, () -> bookingService.getAllBookingsByOwnerId(user2.getId() + 1, "ALL"), "Должно выбрасываться NotFoundException, если пользователь с таким ID не найден");
-        assertThrows(UnsupportedStateException.class, () -> bookingService.getAllBookingsByOwnerId(user1.getId(), "UNKNOWN"), "Должно выбрасываться UnsupportedStateException, если передано неизвестное состояние бронирования");
+        assertEquals(savedBooking, bookingService.getAllBookingsByOwnerId(user1.getId(), BookingState.ALL).get(0), "Должно возвращаться сохранённое бронирование для указанного пользователя");
+        assertThrows(NotFoundException.class, () -> bookingService.getAllBookingsByOwnerId(user2.getId() + 1, BookingState.ALL), "Должно выбрасываться NotFoundException, если пользователь с таким ID не найден");
     }
 }

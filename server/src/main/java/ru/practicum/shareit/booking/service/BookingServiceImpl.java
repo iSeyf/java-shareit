@@ -14,8 +14,7 @@ import ru.practicum.shareit.exceptions.BookingConfirmationException;
 import ru.practicum.shareit.exceptions.BookingModificationException;
 import ru.practicum.shareit.exceptions.ItemUnavailableException;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.exceptions.UnsupportedStateException;
-import ru.practicum.shareit.exceptions.ValidationException;
+import ru.practicum.shareit.exceptions.BookingOverlapException;
 import ru.practicum.shareit.exceptions.WrongUserException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
@@ -39,9 +38,6 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto addBooking(long userId, BookingRequestDto bookingRequestDto) {
         User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
 
-        if (!bookingRequestDto.getStart().isBefore(bookingRequestDto.getEnd())) {
-            throw new ValidationException("Дата start не может быть позже или равной end.");
-        }
         Item item = itemRepository.findById(bookingRequestDto.getItemId()).orElseThrow(() -> new NotFoundException("Предмет с таким ID не найден."));
 
         if (item.getOwner().getId() == userId) {
@@ -56,7 +52,7 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> overlappingBookings = bookingRepository.findAllByItemIdAndEndAfterAndStartBefore(item.getId(), start, end);
 
         if (!overlappingBookings.isEmpty()) {
-            throw new ValidationException("Обнаружены пересекающиеся бронирования.");
+            throw new BookingOverlapException("Обнаружены пересекающиеся бронирования.");
         }
 
         Booking booking = bookingRepository.save(BookingMapper.toBooking(bookingRequestDto, user, item));
@@ -107,18 +103,11 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingDto> getAllBookingsByUserId(long userId, String state) {
+    public List<BookingDto> getAllBookingsByUserId(long userId, BookingState state) {
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
-        BookingState bookingState;
-
-        try {
-            bookingState = BookingState.valueOf(state);
-        } catch (IllegalArgumentException e) {
-            throw new UnsupportedStateException("Unknown state: " + state);
-        }
 
         List<Booking> bookings = new ArrayList<>();
-        switch (bookingState) {
+        switch (state) {
             case ALL -> bookings = bookingRepository.findAllByBookerIdOrderByStartDesc(userId);
             case CURRENT ->
                     bookings = bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(userId,
@@ -137,18 +126,11 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingDto> getAllBookingsByOwnerId(long ownerId, String state) {
+    public List<BookingDto> getAllBookingsByOwnerId(long ownerId, BookingState state) {
         userRepository.findById(ownerId).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
 
-        BookingState bookingState;
-        try {
-            bookingState = BookingState.valueOf(state);
-        } catch (IllegalArgumentException e) {
-            throw new UnsupportedStateException("Unknown state: " + state);
-        }
-
         List<Booking> bookings = new ArrayList<>();
-        switch (bookingState) {
+        switch (state) {
             case ALL -> bookings = bookingRepository.findAllByItemOwnerIdOrderByStartDesc(ownerId);
             case CURRENT ->
                     bookings = bookingRepository.findAllByItemOwnerIdAndStartBeforeAndEndAfterOrderByStartDesc(ownerId,

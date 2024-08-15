@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
@@ -33,7 +32,6 @@ public class UserServiceImpl implements UserService {
             user.setName(userDto.getName());
         }
         if (userDto.getEmail() != null) {
-            checkEmailIsCorrect(userDto);
             if (!userDto.getEmail().equals(user.getEmail())) {
                 user.setEmail(userDto.getEmail());
             }
@@ -59,11 +57,5 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(long id) {
         repository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь с таким ID не найден."));
         repository.deleteById(id);
-    }
-
-    private void checkEmailIsCorrect(UserDto userDto) {
-        if (userDto.getEmail().contains(" ") || !userDto.getEmail().contains("@")) {
-            throw new ValidationException("Некорректный Email.");
-        }
     }
 }
